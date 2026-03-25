@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dino App</title>
+<style>
+body{margin:0;overflow:hidden;font-family:Arial;}
+canvas{display:block;}
+</style>
+</head>
+<body>
+
+<input type="file" id="upload" accept="image/*" style="display:none">
+<canvas id="game"></canvas>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=200;
+
+/* USER */
+let user=null,loginState="login";
+function idGen(){return"ID"+Math.floor(Math.random()*999999);}
+function nameGen(){return"Guest"+Math.floor(Math.random()*999);}
+function loginGuest(){
+let s=localStorage.getItem("user");
+if(s){user=JSON.parse(s);}
+else{
+user={id:idGen(),name:nameGen()};
+localStorage.setItem("user",JSON.stringify(user));
+}
+loginState="menu";
+}
+
+/* DATA */
+let profileImg=localStorage.getItem("profileImg");
+let leaderboard=JSON.parse(localStorage.getItem("leaderboard"))||[];
+let animals=JSON.parse(localStorage.getItem("animals"))||[
+{name:"Dino",customName:"Dino",price:0,owned:true},
+{name:"Kucing",customName:"Kucing",price:15,owned:false},
+{name:"Robot",customName:"Robot",price:30,owned:false}
+];
+let currentAnimal=0;
+
+/* GAME */
+let state="menu";
+let score=0,coins=0,level=1;
+let levelScore=500,showChoice=false;
+
+/* PLAYER */
+let dino={x:50,y:150,dy:0,gravity:0.6,jump:-12,grounded:true};
+
+/* OBSTACLE */
+let obs={x:canvas.width,y:150,w:20,h:40,speed:6};
+
+/* AUDIO */
+let audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+function jumpSound(){
+let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+o.connect(g);g.connect(audioCtx.destination);
+o.type="square";o.frequency.value=1000;
+g.gain.setValueAtTime(0.3,audioCtx.currentTime);
+g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);
+o.start();o.stop(audioCtx.currentTime+0.1);
+}
+
+/* SAVE */
+function saveAll(){
+localStorage.setItem("animals",JSON.stringify(animals));
+localStorage.setItem("leaderboard",JSON.stringify(leaderboard));
+}
+
+/* CONTROL */
+function jump(){
+if(dino.grounded){
+dino.dy=dino.jump;
+dino.grounded=false;
+jumpSound();
+}
+}
+
+/* UPDATE */
+function update(){
+if(loginState!=="menu"||state!=="play") return;
+
+dino.y+=dino.dy;
+dino.dy+=dino.gravity;
+if(dino.y>=150){dino.y=150;dino.dy=0;dino.grounded=true;}
+
+obs.x-=obs.speed;
+
+if(obs.x<-20){
+obs.x=canvas.width+Math.random()*200;
+score++;coins++;
+
+if(score>=level*levelScore){
+state="win";
+setTimeout(()=>showChoice=true,1000);
+}
+}
+
+if(dino.x<obs.x+20 && dino.x+40>obs.x && dino.y<obs.y+40 && dino.y+40>obs.y){
+leaderboard.push({name:user.name,score});
+leaderboard.sort((a,b)=>b.score-a.score);
+leaderboard=leaderboard.slice(0,5);
+saveAll();
+state="gameover";
+}
+}
+
+/* DRAW */
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+/* LOGIN */
+if(loginState==="login"){
+ctx.fillText("1. Guest Login",100,100);
+return;
+}
+
+/* PLAYER */
+ctx.fillStyle="black";
+ctx.fillRect(dino.x,dino.y,40,40);
+
+/* OBSTACLE */
+ctx.fillStyle="green";
+ctx.fillRect(obs.x,obs.y,20,40);
+
+/* UI */
+ctx.fillStyle="black";
+ctx.fillText("User:"+user.name,10,20);
+ctx.fillText("ID:"+user.id,10,35);
+ctx.fillText("Score:"+score,10,50);
+ctx.fillText("Coin:"+coins,10,65);
+ctx.fillText("Level:"+level,10,80);
+
+/* PROFILE */
+if(profileImg){
+let img=new Image();
+img.src=profileImg;
+ctx.drawImage(img,canvas.width-60,10,40,40);
+}
+
+/* MENU */
+if(state==="menu"){
+ctx.fillText("SPACE START",150,80);
+ctx.fillText("S SHOP",150,100);
+ctx.fillText("T TOPUP",150,120);
+ctx.fillText("P FOTO",150,140);
+
+leaderboard.forEach((p,i)=>{
+ctx.fillText((i+1)+". "+p.name+" "+p.score,300,80+i*20);
+});
+}
+
+/* SHOP */
+if(state==="shop"){
+animals.forEach((a,i)=>{
+ctx.fillText((i+1)+"."+a.customName+" "+(a.owned?"Owned":a.price),100,80+i*20);
+});
+}
+
+/* TOPUP */
+if(state==="topup"){
+ctx.fillText("TOP UP",150,60);
+ctx.fillText("1. 10 coin = 5k",150,100);
+ctx.fillText("2. 25 coin = 10k",150,130);
+}
+
+/* WIN */
+if(state==="win"){
+ctx.fillText("BOOYAH!",150,90);
+if(showChoice){
+ctx.fillText("1 lanjut",150,120);
+ctx.fillText("2 selesai",150,140);
+}
+}
+
+/* PAUSE */
+if(state==="pause"){
+ctx.fillText("PAUSED",150,100);
+}
+
+/* GAME OVER */
+if(state==="gameover"){
+ctx.fillText("GAME OVER",150,100);
+}
+}
+
+/* LOOP */
+function loop(){
+update();
+draw();
+requestAnimationFrame(loop);
+}
+loop();
+
+/* INPUT */
+document.addEventListener("keydown",e=>{
+
+if(loginState==="login"){
+if(e.key==="1") loginGuest();
+return;
+}
+
+if(state==="menu"){
+if(e.code==="Space") state="play";
+if(e.key==="s") state="shop";
+if(e.key==="t") state="topup";
+if(e.key==="p") document.getElementById("upload").click();
+}
+
+else if(state==="play"){
+if(e.code==="Space") jump();
+if(e.key==="Escape") state="pause";
+}
+
+else if(state==="pause"){
+if(e.key==="1") state="play";
+if(e.key==="2") state="menu";
+}
+
+else if(state==="gameover"){
+if(e.code==="Space"){score=0;state="menu";}
+}
+
+else if(state==="win" && showChoice){
+if(e.key==="1"){level++;state="play";showChoice=false;}
+if(e.key==="2"){state="gameover";}
+}
+
+else if(state==="topup"){
+if(e.key==="1"){coins+=10;alert("Topup berhasil");}
+if(e.key==="2"){coins+=25;alert("Topup berhasil");}
+if(e.key==="Escape") state="menu";
+}
+
+else if(state==="shop"){
+let i=parseInt(e.key)-1;
+if(animals[i]){
+let a=animals[i];
+if(a.owned) currentAnimal=i;
+else if(coins>=a.price){
+coins-=a.price;a.owned=true;currentAnimal=i;saveAll();
+}
+}
+if(e.key==="r"){
+let i=prompt("Nomor?");
+if(animals[i-1]){
+animals[i-1].customName=prompt("Nama baru");
+saveAll();
+}
+}
+if(e.key==="Escape") state="menu";
+}
+
+});
+
+/* FOTO */
+document.getElementById("upload").onchange=e=>{
+let f=e.target.files[0];
+let r=new FileReader();
+r.onload=ev=>{
+profileImg=ev.target.result;
+localStorage.setItem("profileImg",profileImg);
+};
+if(f) r.readAsDataURL(f);
+};
+</script>
+
+</body>
+</html>
