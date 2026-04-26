@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>FF EVENT LOGIN</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: url('https://images.unsplash.com/photo-1605902711622-cfb43c4437d6') no-repeat center center/cover;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+}
+
+.login-box {
+  position: relative;
+  background: rgba(20,20,20,0.9);
+  padding: 25px;
+  border-radius: 12px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 0 20px red;
+}
+
+h2 {
+  color: orange;
+  margin-bottom: 20px;
+}
+
+input {
+  width: 90%;
+  padding: 10px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 5px;
+}
+
+button {
+  width: 95%;
+  padding: 10px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: darkred;
+}
+
+#msg {
+  margin-top: 10px;
+  color: lime;
+  font-size: 14px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<div class="login-box">
+  <h2>FREE FIRE EVENT LOGIN</h2>
+
+  <input id="user" placeholder="User ID">
+  <input id="pass" type="password" placeholder="Password">
+
+  <button onclick="login()">LOGIN</button>
+
+  <div id="msg"></div>
+</div>
+
+<script>
+function login() {
+  let u = document.getElementById("user").value;
+  let p = document.getElementById("pass").value;
+
+  if(u && p){
+    document.getElementById("msg").innerText =
+    "Login berhasil (demo aja ya, gak beneran nyimpen data 😎)";
+  } else {
+    document.getElementById("msg").innerText =
+    "Isi dulu, jangan males.";
+  }
+}
+</script>
+
+</body>
+</html>
